@@ -1,44 +1,32 @@
-"use client"
-
-import { useState } from "react"
-import { Calendar } from "@/components/ui/calendar"
+import { auth } from "@clerk/nextjs/server"
+import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatStandardDate } from "@/lib/date-utils"
+import { getWorkoutsByUserIdAndDate } from "@/data/workouts"
+import { DateSelector } from "./_components/date-selector"
 
-// Mock workout data for UI demonstration
-const mockWorkouts = [
-  {
-    id: 1,
-    name: "Bench Press",
-    sets: 4,
-    reps: 8,
-    weight: 225,
-  },
-  {
-    id: 2,
-    name: "Squats",
-    sets: 5,
-    reps: 5,
-    weight: 315,
-  },
-  {
-    id: 3,
-    name: "Deadlift",
-    sets: 3,
-    reps: 6,
-    weight: 405,
-  },
-  {
-    id: 4,
-    name: "Overhead Press",
-    sets: 4,
-    reps: 10,
-    weight: 135,
-  },
-]
+interface DashboardPageProps {
+  searchParams: Promise<{ date?: string }>
+}
 
-export default function DashboardPage() {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  // 1. Get authenticated user
+  const { userId } = await auth()
+
+  // 2. Redirect if not authenticated
+  if (!userId) {
+    redirect("/sign-in")
+  }
+
+  // 3. Get selected date from URL params or default to today
+  const params = await searchParams
+  const dateParam = params.date
+  const selectedDate = dateParam
+    ? new Date(dateParam + "T00:00:00") // Parse as local midnight, not UTC
+    : new Date()
+
+  // 4. Fetch workouts for the selected date using data layer
+  const workoutsData = await getWorkoutsByUserIdAndDate(userId, selectedDate)
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
@@ -51,22 +39,9 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Date Picker Section */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle>Select Date</CardTitle>
-            <CardDescription>
-              Choose a date to view workouts
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              className="rounded-md border"
-            />
-          </CardContent>
-        </Card>
+        <div className="lg:col-span-1">
+          <DateSelector />
+        </div>
 
         {/* Workouts List Section */}
         <div className="lg:col-span-2 space-y-4">
@@ -74,32 +49,58 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle>Workouts for {formatStandardDate(selectedDate)}</CardTitle>
               <CardDescription>
-                {mockWorkouts.length} exercise{mockWorkouts.length !== 1 ? "s" : ""} logged
+                {workoutsData.length} workout{workoutsData.length !== 1 ? "s" : ""} logged
               </CardDescription>
             </CardHeader>
           </Card>
 
-          {mockWorkouts.length > 0 ? (
+          {workoutsData.length > 0 ? (
             <div className="space-y-4">
-              {mockWorkouts.map((workout) => (
+              {workoutsData.map((workout) => (
                 <Card key={workout.id}>
                   <CardHeader>
-                    <CardTitle className="text-xl">{workout.name}</CardTitle>
+                    <CardTitle className="text-xl">
+                      {workout.name || "Untitled Workout"}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Sets</p>
-                        <p className="text-2xl font-bold">{workout.sets}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Reps</p>
-                        <p className="text-2xl font-bold">{workout.reps}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Weight (lbs)</p>
-                        <p className="text-2xl font-bold">{workout.weight}</p>
-                      </div>
+                    <div className="space-y-6">
+                      {workout.exercises.map((exercise) => (
+                        <div key={exercise.id} className="border-b pb-4 last:border-b-0 last:pb-0">
+                          <h3 className="font-semibold text-lg mb-3">{exercise.exerciseName}</h3>
+                          {exercise.sets.length > 0 ? (
+                            <div className="space-y-2">
+                              {exercise.sets.map((set) => (
+                                <div
+                                  key={set.id}
+                                  className="grid grid-cols-4 gap-4 text-sm bg-muted/50 p-3 rounded-md"
+                                >
+                                  <div>
+                                    <p className="text-muted-foreground">Set</p>
+                                    <p className="font-medium">{set.setNumber}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Reps</p>
+                                    <p className="font-medium">{set.reps}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Weight (lbs)</p>
+                                    <p className="font-medium">
+                                      {set.weight ? Number(set.weight).toFixed(1) : "-"}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">RIR</p>
+                                    <p className="font-medium">{set.rir ?? "-"}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No sets recorded</p>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>

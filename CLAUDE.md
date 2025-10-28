@@ -6,6 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **Lifting Diary Course** application built with Next.js 16, React 19, TypeScript, and Tailwind CSS v4. The project uses the modern Next.js App Router architecture and follows current best practices for React Server Components.
 
+## Code Generation Guidelines
+
+**CRITICAL**: Before generating ANY code, Claude Code MUST:
+
+1. **Always check the `/docs` directory first** for relevant documentation files
+2. Read and follow the specifications, patterns, and best practices documented in those files
+3. Ensure generated code aligns with the documented architecture and standards
+4. Reference the appropriate documentation file(s) when explaining implementation decisions
+
+The `/docs` directory contains authoritative specifications for this project. Never generate code without first consulting the relevant documentation.
+
+- /docs/ui.md
+
 ## Development Commands
 
 ### Running the Development Server
@@ -31,6 +44,8 @@ Runs the production server (requires `npm run build` first).
 npm run lint
 ```
 Runs ESLint to check code quality and adherence to Next.js standards.
+
+
 
 ## Architecture
 

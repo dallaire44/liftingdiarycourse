@@ -17,10 +17,12 @@ This is a **Lifting Diary Course** application built with Next.js 16, React 19, 
 
 The `/docs` directory contains authoritative specifications for this project. Never generate code without first consulting the relevant documentation.
 
-- /docs/ui.md
+- /docs/auth.md
 - /docs/data-fetching.md (CRITICAL for all data access and security)
 - /docs/data-mutations.md
-- /docs/auth.md
+- /docs/routing.md (CRITICAL for route protection and security)
+- /docs/server-components.md
+- /docs/ui.md
 
 ## Development Commands
 

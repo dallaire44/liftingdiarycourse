@@ -131,3 +131,66 @@ export async function getWorkoutByIdAndUserId(userId: string, workoutId: string)
 
   return result[0] ?? null
 }
+
+/**
+ * Create a new workout with exercises and sets
+ * CRITICAL: Associates workout with userId
+ *
+ * @param userId - The authenticated user's ID (from Clerk)
+ * @param data - Workout data to create
+ * @returns The created workout
+ */
+export type CreateWorkoutData = {
+  name?: string
+  date: Date
+  exercises: {
+    exerciseId: string
+    order: number
+    sets: {
+      setNumber: number
+      reps: number
+      weight?: number
+      rir?: number
+    }[]
+  }[]
+}
+
+export async function createWorkout(userId: string, data: CreateWorkoutData) {
+  // Create the workout
+  const [workout] = await db
+    .insert(workouts)
+    .values({
+      userId,
+      name: data.name,
+      date: data.date,
+      isTemplate: false,
+    })
+    .returning()
+
+  // Create workout exercises with their sets
+  for (const exercise of data.exercises) {
+    const [workoutExercise] = await db
+      .insert(workoutExercises)
+      .values({
+        workoutId: workout.id,
+        exerciseId: exercise.exerciseId,
+        order: exercise.order,
+      })
+      .returning()
+
+    // Create sets for this workout exercise
+    if (exercise.sets.length > 0) {
+      await db.insert(sets).values(
+        exercise.sets.map((set) => ({
+          workoutExerciseId: workoutExercise.id,
+          setNumber: set.setNumber,
+          reps: set.reps,
+          weight: set.weight?.toString(),
+          rir: set.rir,
+        }))
+      )
+    }
+  }
+
+  return workout
+}

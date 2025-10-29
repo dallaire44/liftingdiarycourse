@@ -19,6 +19,8 @@ The `/docs` directory contains authoritative specifications for this project. Ne
 
 - /docs/ui.md
 - /docs/data-fetching.md (CRITICAL for all data access and security)
+- /docs/data-mutations.md
+- /docs/auth.md
 
 ## Development Commands
 

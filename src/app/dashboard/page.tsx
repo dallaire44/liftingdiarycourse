@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatStandardDate } from "@/lib/date-utils"
 import { getWorkoutsByUserIdAndDate } from "@/data/workouts"
@@ -57,53 +58,55 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           {workoutsData.length > 0 ? (
             <div className="space-y-4">
               {workoutsData.map((workout) => (
-                <Card key={workout.id}>
-                  <CardHeader>
-                    <CardTitle className="text-xl">
-                      {workout.name || "Untitled Workout"}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      {workout.exercises.map((exercise) => (
-                        <div key={exercise.id} className="border-b pb-4 last:border-b-0 last:pb-0">
-                          <h3 className="font-semibold text-lg mb-3">{exercise.exerciseName}</h3>
-                          {exercise.sets.length > 0 ? (
-                            <div className="space-y-2">
-                              {exercise.sets.map((set) => (
-                                <div
-                                  key={set.id}
-                                  className="grid grid-cols-4 gap-4 text-sm bg-muted/50 p-3 rounded-md"
-                                >
-                                  <div>
-                                    <p className="text-muted-foreground">Set</p>
-                                    <p className="font-medium">{set.setNumber}</p>
+                <Link key={workout.id} href={`/dashboard/workout/${workout.id}`}>
+                  <Card className="cursor-pointer transition-colors hover:bg-accent">
+                    <CardHeader>
+                      <CardTitle className="text-xl">
+                        {workout.name || "Untitled Workout"}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        {workout.exercises.map((exercise) => (
+                          <div key={exercise.id} className="border-b pb-4 last:border-b-0 last:pb-0">
+                            <h3 className="font-semibold text-lg mb-3">{exercise.exerciseName}</h3>
+                            {exercise.sets.length > 0 ? (
+                              <div className="space-y-2">
+                                {exercise.sets.map((set) => (
+                                  <div
+                                    key={set.id}
+                                    className="grid grid-cols-4 gap-4 text-sm bg-muted/50 p-3 rounded-md"
+                                  >
+                                    <div>
+                                      <p className="text-muted-foreground">Set</p>
+                                      <p className="font-medium">{set.setNumber}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground">Reps</p>
+                                      <p className="font-medium">{set.reps}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground">Weight (lbs)</p>
+                                      <p className="font-medium">
+                                        {set.weight ? Number(set.weight).toFixed(1) : "-"}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground">RIR</p>
+                                      <p className="font-medium">{set.rir ?? "-"}</p>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <p className="text-muted-foreground">Reps</p>
-                                    <p className="font-medium">{set.reps}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-muted-foreground">Weight (lbs)</p>
-                                    <p className="font-medium">
-                                      {set.weight ? Number(set.weight).toFixed(1) : "-"}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="text-muted-foreground">RIR</p>
-                                    <p className="font-medium">{set.rir ?? "-"}</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">No sets recorded</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">No sets recorded</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           ) : (

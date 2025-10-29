@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { formatStandardDate } from "@/lib/date-utils"
 import { getWorkoutsByUserIdAndDate } from "@/data/workouts"
 import { DateSelector } from "./_components/date-selector"
@@ -48,10 +49,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Workouts for {formatStandardDate(selectedDate)}</CardTitle>
-              <CardDescription>
-                {workoutsData.length} workout{workoutsData.length !== 1 ? "s" : ""} logged
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Workouts for {formatStandardDate(selectedDate)}</CardTitle>
+                  <CardDescription>
+                    {workoutsData.length} workout{workoutsData.length !== 1 ? "s" : ""} logged
+                  </CardDescription>
+                </div>
+                <Button asChild>
+                  <Link href="/dashboard/workout/new">Log New Workout</Link>
+                </Button>
+              </div>
             </CardHeader>
           </Card>
 

@@ -110,12 +110,12 @@ export async function getWorkoutsByUserId(userId: string) {
 }
 
 /**
- * Get a specific workout by ID for a user
+ * Get a specific workout by ID for a user with full details
  * CRITICAL: Filters by BOTH userId AND workoutId for security
  *
  * @param userId - The authenticated user's ID (from Clerk)
  * @param workoutId - The workout ID to fetch
- * @returns The workout or null if not found
+ * @returns The workout with exercises and sets, or null if not found
  */
 export async function getWorkoutByIdAndUserId(userId: string, workoutId: string) {
   // CRITICAL: Filter by BOTH userId AND workoutId
@@ -129,5 +129,199 @@ export async function getWorkoutByIdAndUserId(userId: string, workoutId: string)
       )
     )
 
-  return result[0] ?? null
+  const workout = result[0]
+  if (!workout) {
+    return null
+  }
+
+  // Get workout exercises with exercise details
+  const workoutExercisesList = await db
+    .select({
+      id: workoutExercises.id,
+      order: workoutExercises.order,
+      exerciseId: exercises.id,
+      exerciseName: exercises.name,
+      exerciseCategory: exercises.category,
+    })
+    .from(workoutExercises)
+    .innerJoin(exercises, eq(workoutExercises.exerciseId, exercises.id))
+    .where(eq(workoutExercises.workoutId, workout.id))
+    .orderBy(workoutExercises.order)
+
+  // For each workout exercise, fetch its sets
+  const exercisesWithSets = await Promise.all(
+    workoutExercisesList.map(async (workoutExercise) => {
+      const exerciseSets = await db
+        .select({
+          id: sets.id,
+          setNumber: sets.setNumber,
+          reps: sets.reps,
+          weight: sets.weight,
+          rir: sets.rir,
+        })
+        .from(sets)
+        .where(eq(sets.workoutExerciseId, workoutExercise.id))
+        .orderBy(sets.setNumber)
+
+      return {
+        id: workoutExercise.id,
+        exerciseId: workoutExercise.exerciseId,
+        exerciseName: workoutExercise.exerciseName,
+        exerciseCategory: workoutExercise.exerciseCategory,
+        order: workoutExercise.order,
+        sets: exerciseSets,
+      }
+    })
+  )
+
+  return {
+    id: workout.id,
+    name: workout.name,
+    date: workout.date,
+    exercises: exercisesWithSets,
+  }
+}
+
+/**
+ * Create a new workout with exercises and sets
+ * CRITICAL: Associates workout with userId
+ *
+ * @param userId - The authenticated user's ID (from Clerk)
+ * @param data - Workout data to create
+ * @returns The created workout
+ */
+export type CreateWorkoutData = {
+  name?: string
+  date: Date
+  exercises: {
+    exerciseId: string
+    order: number
+    sets: {
+      setNumber: number
+      reps: number
+      weight?: number
+      rir?: number
+    }[]
+  }[]
+}
+
+export async function createWorkout(userId: string, data: CreateWorkoutData) {
+  // Create the workout
+  const [workout] = await db
+    .insert(workouts)
+    .values({
+      userId,
+      name: data.name,
+      date: data.date,
+      isTemplate: false,
+    })
+    .returning()
+
+  // Create workout exercises with their sets
+  for (const exercise of data.exercises) {
+    const [workoutExercise] = await db
+      .insert(workoutExercises)
+      .values({
+        workoutId: workout.id,
+        exerciseId: exercise.exerciseId,
+        order: exercise.order,
+      })
+      .returning()
+
+    // Create sets for this workout exercise
+    if (exercise.sets.length > 0) {
+      await db.insert(sets).values(
+        exercise.sets.map((set) => ({
+          workoutExerciseId: workoutExercise.id,
+          setNumber: set.setNumber,
+          reps: set.reps,
+          weight: set.weight?.toString(),
+          rir: set.rir,
+        }))
+      )
+    }
+  }
+
+  return workout
+}
+
+/**
+ * Update an existing workout with exercises and sets
+ * CRITICAL: Filters by BOTH userId AND workoutId for security
+ *
+ * @param userId - The authenticated user's ID (from Clerk)
+ * @param workoutId - The workout ID to update
+ * @param data - Updated workout data
+ * @returns The updated workout
+ */
+export type UpdateWorkoutData = {
+  name?: string
+  date: Date
+  exercises: {
+    exerciseId: string
+    order: number
+    sets: {
+      setNumber: number
+      reps: number
+      weight?: number
+      rir?: number
+    }[]
+  }[]
+}
+
+export async function updateWorkout(
+  userId: string,
+  workoutId: string,
+  data: UpdateWorkoutData
+) {
+  // CRITICAL: Verify workout belongs to user before updating
+  const existingWorkout = await getWorkoutByIdAndUserId(userId, workoutId)
+  if (!existingWorkout) {
+    throw new Error("Workout not found or access denied")
+  }
+
+  // Update the workout
+  const [workout] = await db
+    .update(workouts)
+    .set({
+      name: data.name,
+      date: data.date,
+    })
+    .where(
+      and(
+        eq(workouts.id, workoutId),
+        eq(workouts.userId, userId) // CRITICAL: Scope to user
+      )
+    )
+    .returning()
+
+  // Delete existing workout exercises and sets
+  await db.delete(workoutExercises).where(eq(workoutExercises.workoutId, workoutId))
+
+  // Create new workout exercises with their sets
+  for (const exercise of data.exercises) {
+    const [workoutExercise] = await db
+      .insert(workoutExercises)
+      .values({
+        workoutId: workout.id,
+        exerciseId: exercise.exerciseId,
+        order: exercise.order,
+      })
+      .returning()
+
+    // Create sets for this workout exercise
+    if (exercise.sets.length > 0) {
+      await db.insert(sets).values(
+        exercise.sets.map((set) => ({
+          workoutExerciseId: workoutExercise.id,
+          setNumber: set.setNumber,
+          reps: set.reps,
+          weight: set.weight?.toString(),
+          rir: set.rir,
+        }))
+      )
+    }
+  }
+
+  return workout
 }

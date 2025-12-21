@@ -13,6 +13,8 @@ This is a Next.js 16 application with TypeScript, using the App Router architect
 - docs/ui.md
 - docs/formatting.md
 - docs/data-fetching.md
+- docs/auth.md
+- docs/data-mutations.md
 
 This ensures:
 

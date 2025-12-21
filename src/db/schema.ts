@@ -1,4 +1,5 @@
 import { pgTable, text, integer, timestamp, real, index, serial, uniqueIndex } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 
 // ============================================================================
 // EXERCISES TABLE - Reusable Exercise Catalog
@@ -129,6 +130,37 @@ export const sets = pgTable('sets', {
   // Index for finding sets for a workout exercise
   workoutExerciseIdSetNumberIdx: index('sets_workout_exercise_id_set_number_idx')
     .on(table.workoutExerciseId, table.setNumber),
+}));
+
+// ============================================================================
+// RELATIONS (for Drizzle relational queries)
+// ============================================================================
+
+export const workoutsRelations = relations(workouts, ({ many }) => ({
+  workoutExercises: many(workoutExercises),
+}));
+
+export const workoutExercisesRelations = relations(workoutExercises, ({ one, many }) => ({
+  workout: one(workouts, {
+    fields: [workoutExercises.workoutId],
+    references: [workouts.id],
+  }),
+  exercise: one(exercises, {
+    fields: [workoutExercises.exerciseId],
+    references: [exercises.id],
+  }),
+  sets: many(sets),
+}));
+
+export const exercisesRelations = relations(exercises, ({ many }) => ({
+  workoutExercises: many(workoutExercises),
+}));
+
+export const setsRelations = relations(sets, ({ one }) => ({
+  workoutExercise: one(workoutExercises, {
+    fields: [sets.workoutExerciseId],
+    references: [workoutExercises.id],
+  }),
 }));
 
 // ============================================================================

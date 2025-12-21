@@ -8,10 +8,11 @@ This is a Next.js 16 application with TypeScript, using the App Router architect
 
 ## IMPORTANT: Documentation-First Development
 
-**CRITICAL**: When generating ANY code, Claude Code MUST ALWAYS first refer to the relevant documentation files within the `/docs` directory. 
+**CRITICAL**: When generating ANY code, Claude Code MUST ALWAYS first refer to the relevant documentation files within the `/docs` directory:
 
 - docs/ui.md
 - docs/formatting.md
+- docs/data-fetching.md
 
 This ensures:
 

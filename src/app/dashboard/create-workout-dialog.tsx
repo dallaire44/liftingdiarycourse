@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,6 +19,7 @@ import { createWorkout } from '@/app/actions/workouts'
 export function CreateWorkoutDialog() {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -31,10 +32,10 @@ export function CreateWorkoutDialog() {
       const result = await createWorkout(formData)
 
       if (result.success) {
+        // Reset form before closing dialog
+        formRef.current?.reset()
         setOpen(false)
         router.refresh()
-        // Reset form
-        e.currentTarget.reset()
       } else {
         console.error('Failed to create workout:', result.error)
         alert('Failed to create workout. Please try again.')
@@ -53,7 +54,7 @@ export function CreateWorkoutDialog() {
         <Button size="lg">Create New Workout</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
+        <form ref={formRef} onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create New Workout</DialogTitle>
             <DialogDescription>

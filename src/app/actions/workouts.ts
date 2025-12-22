@@ -5,6 +5,7 @@ import { db } from '@/db'
 import { workouts } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 
 /**
  * Creates a new workout for the authenticated user.
@@ -122,5 +123,65 @@ export async function completeWorkout(workoutId: number) {
   } catch (error) {
     console.error('Error completing workout:', error)
     return { success: false, error: 'Failed to complete workout' }
+  }
+}
+
+// Zod schema for updating workout
+const updateWorkoutSchema = z.object({
+  workoutId: z.number().int().positive(),
+  name: z.string().max(100).optional().nullable(),
+  startedAt: z.coerce.date().optional(),
+  completedAt: z.coerce.date().optional().nullable(),
+})
+
+/**
+ * Updates a workout's details.
+ *
+ * SECURITY: Verifies ownership before updating.
+ * Users can only update their own workouts.
+ */
+export async function updateWorkout(input: z.infer<typeof updateWorkoutSchema>) {
+  // 1. Validate input with Zod
+  const validatedInput = updateWorkoutSchema.parse(input)
+
+  // 2. Check authentication
+  const { userId } = await auth()
+
+  if (!userId) {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  try {
+    // 3. Update the workout (only if it belongs to the user)
+    const [updatedWorkout] = await db
+      .update(workouts)
+      .set({
+        ...(validatedInput.name !== undefined && { name: validatedInput.name }),
+        ...(validatedInput.startedAt && { startedAt: validatedInput.startedAt }),
+        ...(validatedInput.completedAt !== undefined && { completedAt: validatedInput.completedAt }),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(workouts.id, validatedInput.workoutId),
+          eq(workouts.userId, userId) // CRITICAL: Verify ownership
+        )
+      )
+      .returning()
+
+    // 4. Check if workout exists (returns undefined if not found/unauthorized)
+    if (!updatedWorkout) {
+      return { success: false, error: 'Workout not found or unauthorized' }
+    }
+
+    // 5. Revalidate affected paths
+    revalidatePath('/dashboard')
+    revalidatePath(`/dashboard/workout/${validatedInput.workoutId}`)
+
+    // 6. Return result
+    return { success: true, workout: updatedWorkout }
+  } catch (error) {
+    console.error('Error updating workout:', error)
+    return { success: false, error: 'Failed to update workout' }
   }
 }

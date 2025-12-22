@@ -6,15 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Next.js 16 application with TypeScript, using the App Router architecture and Tailwind CSS 4 for styling. The project appears to be a lifting diary course application bootstrapped with `create-next-app`.
 
-## IMPORTANT: Documentation-First Development
+## Code Generation Guidelines
 
 **CRITICAL**: When generating ANY code, Claude Code MUST ALWAYS first refer to the relevant documentation files within the `/docs` directory:
 
-- docs/ui.md
-- docs/formatting.md
-- docs/data-fetching.md
-- docs/auth.md
-- docs/data-mutations.md
+- /docs/ui.md
+- /docs/formatting.md
+- /docs/data-fetching.md
+- /docs/auth.md
+- /docs/data-mutations.md
+- /docs/server-components.md
 
 This ensures:
 

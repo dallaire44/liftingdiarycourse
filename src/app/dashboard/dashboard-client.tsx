@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { format, startOfDay } from 'date-fns'
 import { Calendar } from '@/components/ui/calendar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -115,7 +116,11 @@ export function DashboardClient({ workouts }: DashboardClientProps) {
             {filteredWorkouts.length > 0 ? (
               <div className="space-y-4">
                 {filteredWorkouts.map((workout) => (
-                  <div key={workout.id} className="space-y-3">
+                  <Link
+                    key={workout.id}
+                    href={`/dashboard/workout/${workout.id}`}
+                    className="block space-y-3 transition-opacity hover:opacity-80"
+                  >
                     {workout.name && (
                       <h3 className="font-semibold text-lg">{workout.name}</h3>
                     )}
@@ -161,7 +166,7 @@ export function DashboardClient({ workouts }: DashboardClientProps) {
                         </Card>
                       )
                     })}
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
